@@ -1,0 +1,23 @@
+{
+  "name": "iCANS Timesheet",
+  "short_name": "Timesheet",
+  "description": "iCANS internal timesheet tracker",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e2a4a",
+  "theme_color": "#1e2a4a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

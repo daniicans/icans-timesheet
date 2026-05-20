@@ -1,0 +1,13 @@
+{
+  "crons": [
+    {
+      "path": "/api/notify",
+      "schedule": "0 15 * * 4"
+    }
+  ],
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 30
+    }
+  }
+}
