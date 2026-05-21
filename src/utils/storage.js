@@ -16,7 +16,7 @@ export function saveSettings(settings) {
 }
 
 export function defaultSettings() {
-  return { name: 'Dani', email: 'dani@icans.ai', rate: 25 }
+  return { name: 'Dani', email: 'dani@icans.ai', rate: 25, logMode: 'time' }
 }
 
 export function getAllEntries() {

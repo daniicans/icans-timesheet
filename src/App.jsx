@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   getThursdayOf, getPayPeriod, todayISO, formatDisplayRange,
-  prevThursday, nextThursday, isWeekend, isPast, calcHours, formatHours
+  prevThursday, nextThursday, isWeekend, isPast, calcEntryHours, formatHours
 } from './utils/time.js'
 import {
   getSettings, saveSettings, defaultSettings,
@@ -62,7 +62,7 @@ export default function App() {
       await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sub)
+        body: JSON.stringify({ subscription: sub, userEmail: settings.email })
       })
     } catch {}
   }
@@ -75,8 +75,8 @@ export default function App() {
     fetch('/api/sync-entries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ thursdayStr, entries: updatedEntries })
-    }).catch(() => {}) // best-effort, never block the UI
+      body: JSON.stringify({ userEmail: settings.email, thursdayStr, entries: updatedEntries })
+    }).catch(() => {})
   }
 
   function syncSettingsToServer(s) {
@@ -130,8 +130,7 @@ export default function App() {
   // totals
   let totalHrs = 0
   periodDates.forEach((d) => {
-    const e = entries[d]
-    if (e?.start && e?.end) totalHrs += calcHours(e.start, e.end)
+    totalHrs += calcEntryHours(entries[d])
   })
   const totalEarnings = (totalHrs * settings.rate).toFixed(2)
 
@@ -256,6 +255,7 @@ export default function App() {
           dateStr={logModal}
           existing={entries[logModal]}
           rate={settings.rate}
+          logMode={settings.logMode || 'time'}
           onSave={(entry) => handleSaveEntry(logModal, entry)}
           onCancel={() => setLogModal(null)}
         />

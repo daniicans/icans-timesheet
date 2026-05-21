@@ -1,4 +1,4 @@
-import { getDayLabel, getDayNum, isWeekend, isPast, isToday, isFuture, calcHours, formatHours, formatTime12 } from '../utils/time.js'
+import { getDayLabel, getDayNum, isWeekend, isPast, isToday, isFuture, calcEntryHours, formatHours, formatTime12 } from '../utils/time.js'
 
 export default function DayRow({ dateStr, entry, rate, onLog, onEdit, onDelete }) {
   const dayLabel = getDayLabel(dateStr)
@@ -6,22 +6,19 @@ export default function DayRow({ dateStr, entry, rate, onLog, onEdit, onDelete }
   const weekend = isWeekend(dateStr)
   const past = isPast(dateStr)
   const today = isToday(dateStr)
-  const future = isFuture(dateStr)
-  const logged = !!(entry?.start && entry?.end)
+  const logged = entry?.hours != null || !!(entry?.start && entry?.end)
+  const hoursOnly = entry?.hours != null
 
-  let accentColor = '#e2e8f0' // default gray
+  let accentColor = '#e2e8f0'
   if (logged) accentColor = '#22c55e'
   else if (today) accentColor = 'rgba(34,197,94,0.3)'
   else if (past && !weekend) accentColor = '#ef4444'
 
-  const hours = logged ? calcHours(entry.start, entry.end) : 0
+  const hours = calcEntryHours(entry)
   const earnings = (hours * rate).toFixed(2)
 
   return (
-    <div
-      className="day-row"
-      style={{ opacity: weekend && !logged ? 0.6 : 1 }}
-    >
+    <div className="day-row" style={{ opacity: weekend && !logged ? 0.6 : 1 }}>
       <div className="day-accent" style={{ background: accentColor }} />
       <div className="day-label-col">
         <span className="day-name">{dayLabel}</span>
@@ -30,9 +27,11 @@ export default function DayRow({ dateStr, entry, rate, onLog, onEdit, onDelete }
       <div className="day-content">
         {logged ? (
           <div className="logged-content">
-            <div className="time-range">
-              {formatTime12(entry.start)} → {formatTime12(entry.end)}
-            </div>
+            {!hoursOnly && (
+              <div className="time-range">
+                {formatTime12(entry.start)} → {formatTime12(entry.end)}
+              </div>
+            )}
             <div className="hours-row">
               <span className="hours-big">{formatHours(hours)} hrs</span>
               <span className="earnings">${earnings}</span>

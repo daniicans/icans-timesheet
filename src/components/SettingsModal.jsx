@@ -5,6 +5,7 @@ export default function SettingsModal({ settings, onSave, onCancel }) {
   const [email, setEmail] = useState(settings.email)
   const [katherineEmail, setKatherineEmail] = useState(settings.katherineEmail || 'katherine@icans.ai')
   const [rate, setRate] = useState(settings.rate)
+  const [logMode, setLogMode] = useState(settings.logMode || 'time')
 
   function handleBackdrop(e) {
     if (e.target === e.currentTarget) onCancel()
@@ -17,7 +18,7 @@ export default function SettingsModal({ settings, onSave, onCancel }) {
   }, [onCancel])
 
   function handleSave() {
-    onSave({ name: name.trim(), email: email.trim(), katherineEmail: katherineEmail.trim(), rate: Number(rate) })
+    onSave({ name: name.trim(), email: email.trim(), katherineEmail: katherineEmail.trim(), rate: Number(rate), logMode })
   }
 
   return (
@@ -43,6 +44,25 @@ export default function SettingsModal({ settings, onSave, onCancel }) {
           <div className="settings-field">
             <label>Hourly Rate ($)</label>
             <input type="number" value={rate} min="1" step="0.50" onChange={(e) => setRate(e.target.value)} />
+          </div>
+          <div className="settings-field">
+            <label>Log Mode</label>
+            <div className="log-mode-toggle">
+              <button
+                className={`toggle-btn ${logMode === 'time' ? 'active' : ''}`}
+                onClick={() => setLogMode('time')}
+                type="button"
+              >
+                🕐 Clock In / Out
+              </button>
+              <button
+                className={`toggle-btn ${logMode === 'hours' ? 'active' : ''}`}
+                onClick={() => setLogMode('hours')}
+                type="button"
+              >
+                # Hours Only
+              </button>
+            </div>
           </div>
         </div>
         <div className="modal-footer">

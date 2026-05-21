@@ -85,6 +85,13 @@ export function calcHours(start, end) {
   return Math.max(0, mins / 60)
 }
 
+// Works for both { start, end } and { hours } entries
+export function calcEntryHours(entry) {
+  if (!entry) return 0
+  if (entry.hours != null) return Number(entry.hours)
+  return calcHours(entry.start, entry.end)
+}
+
 export function formatHours(h) {
   return h.toFixed(2)
 }

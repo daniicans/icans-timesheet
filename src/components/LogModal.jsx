@@ -1,26 +1,35 @@
 import { useState, useEffect } from 'react'
-import { formatFullDate, calcHours, formatHours } from '../utils/time.js'
+import { formatFullDate, calcHours, calcEntryHours, formatHours } from '../utils/time.js'
 
-export default function LogModal({ dateStr, existing, rate, onSave, onCancel }) {
+export default function LogModal({ dateStr, existing, rate, logMode, onSave, onCancel }) {
+  const isHoursMode = logMode === 'hours'
+
   const [start, setStart] = useState(existing?.start || '')
   const [end, setEnd] = useState(existing?.end || '')
+  const [hoursInput, setHoursInput] = useState(
+    existing?.hours != null ? String(existing.hours) : ''
+  )
   const [note, setNote] = useState(existing?.note || '')
 
-  const hours = calcHours(start, end)
+  const hours = isHoursMode
+    ? (parseFloat(hoursInput) || 0)
+    : calcHours(start, end)
   const earnings = (hours * rate).toFixed(2)
-  const canSave = start && end && hours > 0
+  const canSave = isHoursMode ? hours > 0 : (start && end && hours > 0)
 
   function handleSave() {
     if (!canSave) return
-    onSave({ start, end, note: note.trim() })
+    if (isHoursMode) {
+      onSave({ hours: parseFloat(hoursInput), note: note.trim() })
+    } else {
+      onSave({ start, end, note: note.trim() })
+    }
   }
 
-  // close on backdrop click
   function handleBackdrop(e) {
     if (e.target === e.currentTarget) onCancel()
   }
 
-  // close on Escape
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onCancel() }
     window.addEventListener('keydown', handler)
@@ -39,26 +48,44 @@ export default function LogModal({ dateStr, existing, rate, onSave, onCancel }) 
         </div>
 
         <div className="modal-body">
-          <div className="time-inputs">
-            <div className="time-field">
-              <label>Clock In</label>
+          {isHoursMode ? (
+            <div className="time-field" style={{ width: '100%' }}>
+              <label>Hours Worked</label>
               <input
-                type="time"
-                value={start}
-                onChange={(e) => setStart(e.target.value)}
-                className={start ? 'filled' : ''}
+                type="number"
+                min="0"
+                max="24"
+                step="0.25"
+                placeholder="e.g. 8 or 7.5"
+                value={hoursInput}
+                onChange={(e) => setHoursInput(e.target.value)}
+                className={hoursInput ? 'filled' : ''}
+                style={{ fontSize: '28px', textAlign: 'center', padding: '14px' }}
+                autoFocus
               />
             </div>
-            <div className="time-field">
-              <label>Clock Out</label>
-              <input
-                type="time"
-                value={end}
-                onChange={(e) => setEnd(e.target.value)}
-                className={end ? 'filled' : ''}
-              />
+          ) : (
+            <div className="time-inputs">
+              <div className="time-field">
+                <label>Clock In</label>
+                <input
+                  type="time"
+                  value={start}
+                  onChange={(e) => setStart(e.target.value)}
+                  className={start ? 'filled' : ''}
+                />
+              </div>
+              <div className="time-field">
+                <label>Clock Out</label>
+                <input
+                  type="time"
+                  value={end}
+                  onChange={(e) => setEnd(e.target.value)}
+                  className={end ? 'filled' : ''}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {canSave && (
             <div className="preview-card">
