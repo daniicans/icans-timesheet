@@ -249,6 +249,12 @@ input { font-family: inherit; }
   color: rgba(255,255,255,.8); border: 1.5px solid rgba(255,255,255,.3);
 }
 .btn-ghost:hover { background: rgba(255,255,255,.1); }
+.btn-outline-white {
+  padding: 8px 14px; border-radius: 10px; font-size: 14px; font-weight: 600;
+  color: #fff; border: 1.5px solid rgba(255,255,255,.5); background: rgba(255,255,255,.08);
+}
+.btn-outline-white:hover:not(:disabled) { background: rgba(255,255,255,.15); }
+.btn-outline-white:disabled { opacity: .5; cursor: default; }
 .btn-primary {
   padding: 8px 14px; border-radius: 10px; font-size: 14px; font-weight: 700;
   background: var(--green); color: var(--navy);

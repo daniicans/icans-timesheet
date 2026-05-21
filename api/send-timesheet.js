@@ -1,4 +1,5 @@
 import { google } from 'googleapis'
+import PDFDocument from 'pdfkit'
 
 function calcHours(start, end) {
   if (!start || !end) return 0
@@ -13,80 +14,9 @@ function fmt12(t) {
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`
 }
 
-function fmtDate(iso) {
+function fmtLongDate(iso) {
   const d = new Date(iso + 'T00:00:00')
-  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
-  return `${days[d.getDay()]} ${months[d.getMonth()]} ${d.getDate()}`
-}
-
-function buildEmailBody(periodDates, entries, settings, range) {
-  const { name, rate } = settings
-  let totalHrs = 0
-  const lines = periodDates.map((date) => {
-    const e = entries[date]
-    const label = fmtDate(date).padEnd(26)
-    if (!e?.start || !e?.end) return `  ${label}  —`
-    const hrs = calcHours(e.start, e.end)
-    totalHrs += hrs
-    const amt = (hrs * rate).toFixed(2)
-    return `  ${label}  ${fmt12(e.start)} – ${fmt12(e.end)}   (${hrs.toFixed(2)} hrs)   $${amt}`
-  }).join('\n')
-
-  return `Hi Katherine,
-
-Here is my timesheet for ${range}.
-
-Summary:
-${lines}
-
-Total Hours:  ${totalHrs.toFixed(2)} hrs
-Total Amount: $${(totalHrs * rate).toFixed(2)}
-
-The full timesheet is attached.
-
-Best,
-${name}`
-}
-
-function generatePDFHTML(periodDates, entries, settings, range) {
-  const { name, rate } = settings
-  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
-  let totalHrs = 0
-
-  const rows = periodDates.map((date) => {
-    const e = entries[date]
-    const d = new Date(date + 'T00:00:00')
-    const label = `${days[d.getDay()]} ${months[d.getMonth()]} ${d.getDate()}`
-    if (!e?.start || !e?.end) {
-      return `<tr><td>${label}</td><td class="empty">—</td><td class="empty">—</td><td class="empty">—</td><td class="empty">—</td></tr>`
-    }
-    const hrs = calcHours(e.start, e.end)
-    totalHrs += hrs
-    return `<tr><td>${label}</td><td>${fmt12(e.start)}</td><td>${fmt12(e.end)}</td><td>${hrs.toFixed(2)} hrs</td><td class="amount">$${(hrs * rate).toFixed(2)}</td></tr>`
-  }).join('')
-
-  const generated = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Timesheet ${range}</title>
-<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;color:#1e2a4a;background:#fff;padding:40px;max-width:860px;margin:0 auto}.top-bar{height:5px;background:#22c55e;border-radius:3px;margin-bottom:32px}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px}.logo{width:36px;height:36px;background:#1e2a4a;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#22c55e;font-size:20px;font-weight:800;margin-right:10px}.brand{display:flex;align-items:center}.brand-text{font-size:18px;font-weight:700}.brand-sub{font-size:12px;color:#64748b}.meta{text-align:right}.period-label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-bottom:4px}.period-range{font-size:20px;font-weight:700}.rate-chip{display:inline-block;background:#dcfce7;color:#16a34a;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;margin-top:4px}table{width:100%;border-collapse:collapse;margin-bottom:32px}thead tr{background:#1e2a4a;color:#fff}thead th{padding:12px 16px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}tbody tr:nth-child(even){background:#f8fafc}tbody td{padding:11px 16px;font-size:14px;border-bottom:1px solid #e2e8f0}td.empty{color:#94a3b8}td.amount{font-weight:600}tfoot tr{background:#1e2a4a;color:#fff}tfoot td{padding:14px 16px;font-size:14px;font-weight:600}tfoot td.total-amt{font-size:18px;color:#22c55e;font-weight:800}.signature{display:flex;justify-content:space-between;align-items:flex-end;margin-top:40px;padding-top:24px;border-top:1px solid #e2e8f0}.sig-label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;display:block;margin-bottom:32px}.sig-line{border-bottom:1.5px solid #1e2a4a;width:220px;margin-bottom:6px}.sig-name{font-size:13px;color:#475569}.generated{text-align:right;font-size:12px;color:#94a3b8;line-height:1.6}</style>
-</head><body>
-<div class="top-bar"></div>
-<div class="header">
-  <div class="brand"><div class="logo">i</div><div><div class="brand-text">iCANS</div><div class="brand-sub">Timesheet</div></div></div>
-  <div class="meta"><div class="period-label">Pay Period</div><div class="period-range">${range}</div><div style="font-size:13px;color:#475569;margin-top:4px">${name}</div><div class="rate-chip">$${Number(rate).toFixed(2)}/hr</div></div>
-</div>
-<table>
-  <thead><tr><th>Date</th><th>Time In</th><th>Time Out</th><th>Hours</th><th>Amount</th></tr></thead>
-  <tbody>${rows}</tbody>
-  <tfoot><tr><td colspan="3"><strong>Total</strong></td><td>${totalHrs.toFixed(2)} hrs</td><td class="total-amt">$${(totalHrs * rate).toFixed(2)}</td></tr></tfoot>
-</table>
-<div class="signature">
-  <div><span class="sig-label">Employee Signature</span><div class="sig-line"></div><div class="sig-name">${name} · Date: ___________</div></div>
-  <div class="generated">Generated ${generated}<br/>iCANS · icans.ai</div>
-</div>
-</body></html>`
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 }
 
 function fmtRange(dates) {
@@ -97,9 +27,230 @@ function fmtRange(dates) {
   return `${months[s.getMonth()]} ${s.getDate()} – ${months[e.getMonth()]} ${e.getDate()}`
 }
 
-function makeRawEmail({ to, from, subject, body, attachmentName, attachmentContent }) {
+// ── Real PDF via pdfkit ──────────────────────────────────────────────────────
+async function generatePDF(periodDates, entries, settings) {
+  const { name, rate } = settings
+  const range = fmtRange(periodDates)
+
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50, size: 'LETTER' })
+    const chunks = []
+    doc.on('data', (c) => chunks.push(c))
+    doc.on('end', () => resolve(Buffer.concat(chunks)))
+    doc.on('error', reject)
+
+    const NAVY = '#1e2a4a'
+    const GREEN = '#22c55e'
+    const GRAY = '#64748b'
+    const LIGHT = '#f8fafc'
+    const W = doc.page.width - 100 // usable width
+
+    // Green top bar
+    doc.rect(50, 30, W, 5).fill(GREEN)
+
+    // Logo mark
+    doc.roundedRect(50, 50, 36, 36, 6).fill(NAVY)
+    doc.fillColor(GREEN).font('Helvetica-Bold').fontSize(22).text('i', 50, 57, { width: 36, align: 'center' })
+
+    // Brand name
+    doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(16).text('iCANS', 96, 52)
+    doc.fillColor(GRAY).font('Helvetica').fontSize(10).text('Timesheet', 96, 70)
+
+    // Period info (right side)
+    const rightX = 370
+    doc.fillColor(GRAY).font('Helvetica').fontSize(9).text('PAY PERIOD', rightX, 52)
+    doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(16).text(range, rightX, 64)
+    doc.fillColor(GRAY).font('Helvetica').fontSize(10).text(name, rightX, 84)
+
+    // Rate chip
+    doc.roundedRect(rightX, 97, 70, 16, 4).fill('#dcfce7')
+    doc.fillColor('#16a34a').font('Helvetica-Bold').fontSize(9).text(`$${Number(rate).toFixed(2)}/hr`, rightX + 4, 101)
+
+    // Table starts
+    let y = 130
+
+    // Table header
+    const cols = { date: 50, in: 240, out: 320, hrs: 400, amt: 460 }
+    doc.rect(50, y, W, 22).fill(NAVY)
+    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(9)
+    doc.text('DATE', cols.date + 4, y + 7)
+    doc.text('TIME IN', cols.in, y + 7)
+    doc.text('TIME OUT', cols.out, y + 7)
+    doc.text('HOURS', cols.hrs, y + 7)
+    doc.text('AMOUNT', cols.amt, y + 7)
+    y += 22
+
+    let totalHrs = 0
+    periodDates.forEach((date, i) => {
+      const e = entries[date]
+      const rowH = 22
+      if (i % 2 === 1) doc.rect(50, y, W, rowH).fill(LIGHT)
+
+      const d = new Date(date + 'T00:00:00')
+      const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+
+      doc.fillColor(NAVY).font('Helvetica').fontSize(10).text(dayLabel, cols.date + 4, y + 6)
+
+      if (e?.start && e?.end) {
+        const hrs = calcHours(e.start, e.end)
+        totalHrs += hrs
+        const amt = hrs * rate
+        doc.text(fmt12(e.start), cols.in, y + 6)
+        doc.text(fmt12(e.end), cols.out, y + 6)
+        doc.font('Helvetica-Bold').text(`${hrs.toFixed(2)} hrs`, cols.hrs, y + 6)
+        doc.fillColor(GREEN).text(`$${amt.toFixed(2)}`, cols.amt, y + 6)
+      } else {
+        doc.fillColor(GRAY).text('—', cols.in, y + 6)
+        doc.text('—', cols.out, y + 6)
+        doc.text('—', cols.hrs, y + 6)
+        doc.text('—', cols.amt, y + 6)
+      }
+      y += rowH
+    })
+
+    // Total row
+    doc.rect(50, y, W, 26).fill(NAVY)
+    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(11)
+    doc.text('TOTAL', cols.date + 4, y + 7)
+    doc.text(`${totalHrs.toFixed(2)} hrs`, cols.hrs, y + 7)
+    doc.fillColor(GREEN).fontSize(13).text(`$${(totalHrs * rate).toFixed(2)}`, cols.amt, y + 5)
+    y += 40
+
+    // Signature line
+    doc.moveTo(50, y + 30).lineTo(260, y + 30).strokeColor('#cbd5e1').lineWidth(1).stroke()
+    doc.fillColor(GRAY).font('Helvetica').fontSize(9).text('Employee Signature', 50, y + 35)
+    doc.text(`${name} · Date: ___________`, 50, y + 47)
+
+    // Generated note
+    const gen = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    doc.fillColor(GRAY).fontSize(8)
+      .text(`Generated ${gen}`, 380, y + 35, { align: 'right', width: W - 330 })
+      .text('iCANS · icans.ai', 380, y + 46, { align: 'right', width: W - 330 })
+
+    doc.end()
+  })
+}
+
+// ── Branded HTML email body ──────────────────────────────────────────────────
+function buildEmailHTML(periodDates, entries, settings, range) {
+  const { name, rate } = settings
+  let totalHrs = 0
+
+  const rows = periodDates.map((date) => {
+    const e = entries[date]
+    const d = new Date(date + 'T00:00:00')
+    const dayLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+    const bg = periodDates.indexOf(date) % 2 === 0 ? '#ffffff' : '#f8fafc'
+
+    if (!e?.start || !e?.end) {
+      return `<tr style="background:${bg}">
+        <td style="padding:10px 16px;font-size:13px;color:#1e2a4a">${dayLabel}</td>
+        <td style="padding:10px 16px;color:#94a3b8;text-align:center">—</td>
+        <td style="padding:10px 16px;color:#94a3b8;text-align:center">—</td>
+        <td style="padding:10px 16px;color:#94a3b8;text-align:center">—</td>
+        <td style="padding:10px 16px;color:#94a3b8;text-align:center">—</td>
+      </tr>`
+    }
+    const hrs = calcHours(e.start, e.end)
+    totalHrs += hrs
+    return `<tr style="background:${bg}">
+      <td style="padding:10px 16px;font-size:13px;color:#1e2a4a;font-weight:500">${dayLabel}</td>
+      <td style="padding:10px 16px;font-size:13px;color:#475569;text-align:center">${fmt12(e.start)}</td>
+      <td style="padding:10px 16px;font-size:13px;color:#475569;text-align:center">${fmt12(e.end)}</td>
+      <td style="padding:10px 16px;font-size:13px;color:#1e2a4a;font-weight:600;text-align:center">${hrs.toFixed(2)} hrs</td>
+      <td style="padding:10px 16px;font-size:13px;color:#16a34a;font-weight:700;text-align:right">$${(hrs * rate).toFixed(2)}</td>
+    </tr>`
+  }).join('')
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 0">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)">
+
+        <!-- Header -->
+        <tr><td style="background:#1e2a4a;padding:28px 32px">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>
+                <table cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="background:#22c55e;width:36px;height:36px;border-radius:8px;text-align:center;vertical-align:middle">
+                      <span style="color:#1e2a4a;font-size:22px;font-weight:800;line-height:36px">i</span>
+                    </td>
+                    <td style="padding-left:10px">
+                      <div style="color:#ffffff;font-size:17px;font-weight:700;line-height:1.2">iCANS</div>
+                      <div style="color:rgba(255,255,255,.55);font-size:11px">Timesheet</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+              <td align="right">
+                <div style="color:rgba(255,255,255,.55);font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Pay Period</div>
+                <div style="color:#ffffff;font-size:20px;font-weight:800">${range}</div>
+                <div style="display:inline-block;background:#22c55e;color:#1e2a4a;border-radius:999px;padding:3px 12px;font-size:11px;font-weight:700;margin-top:6px">$${Number(rate).toFixed(2)}/hr</div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- Greeting -->
+        <tr><td style="padding:28px 32px 8px">
+          <p style="margin:0;font-size:15px;color:#475569;line-height:1.6">Hi Katherine,</p>
+          <p style="margin:12px 0 0;font-size:15px;color:#475569;line-height:1.6">
+            Here is my timesheet for <strong style="color:#1e2a4a">${range}</strong>. The full timesheet is attached as a PDF.
+          </p>
+        </td></tr>
+
+        <!-- Table -->
+        <tr><td style="padding:16px 32px">
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">
+            <thead>
+              <tr style="background:#1e2a4a">
+                <th style="padding:11px 16px;text-align:left;font-size:10px;color:#fff;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Date</th>
+                <th style="padding:11px 16px;text-align:center;font-size:10px;color:#fff;text-transform:uppercase;letter-spacing:.06em;font-weight:600">In</th>
+                <th style="padding:11px 16px;text-align:center;font-size:10px;color:#fff;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Out</th>
+                <th style="padding:11px 16px;text-align:center;font-size:10px;color:#fff;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Hours</th>
+                <th style="padding:11px 16px;text-align:right;font-size:10px;color:#fff;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Amount</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+            <tfoot>
+              <tr style="background:#1e2a4a">
+                <td colspan="3" style="padding:13px 16px;font-size:13px;color:#fff;font-weight:700">Total</td>
+                <td style="padding:13px 16px;font-size:14px;color:#fff;font-weight:800;text-align:center">${totalHrs.toFixed(2)} hrs</td>
+                <td style="padding:13px 16px;font-size:16px;color:#22c55e;font-weight:800;text-align:right">$${(totalHrs * rate).toFixed(2)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </td></tr>
+
+        <!-- Sign-off -->
+        <tr><td style="padding:8px 32px 28px">
+          <p style="margin:0;font-size:14px;color:#475569;line-height:1.7">Best,<br/><strong style="color:#1e2a4a">${name}</strong></p>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0">
+          <p style="margin:0;font-size:11px;color:#94a3b8;text-align:center">
+            iCANS · <a href="https://icans.ai" style="color:#94a3b8">icans.ai</a> ·
+            Generated ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+function makeRawEmail({ to, from, subject, htmlBody, pdfBuffer, attachmentName }) {
   const boundary = 'boundary_icans_ts_' + Date.now()
-  const attachB64 = Buffer.from(attachmentContent).toString('base64')
+  const pdfB64 = pdfBuffer.toString('base64')
+
   const raw = [
     `From: ${from}`,
     `To: ${to}`,
@@ -108,19 +259,21 @@ function makeRawEmail({ to, from, subject, body, attachmentName, attachmentConte
     `Content-Type: multipart/mixed; boundary="${boundary}"`,
     '',
     `--${boundary}`,
-    `Content-Type: text/plain; charset=UTF-8`,
+    `Content-Type: text/html; charset=UTF-8`,
+    `Content-Transfer-Encoding: quoted-printable`,
     '',
-    body,
+    htmlBody,
     '',
     `--${boundary}`,
-    `Content-Type: text/html; name="${attachmentName}"`,
+    `Content-Type: application/pdf; name="${attachmentName}"`,
     `Content-Disposition: attachment; filename="${attachmentName}"`,
     `Content-Transfer-Encoding: base64`,
     '',
-    attachB64,
+    pdfB64.match(/.{1,76}/g).join('\r\n'),
     '',
     `--${boundary}--`
   ].join('\r\n')
+
   return Buffer.from(raw).toString('base64url')
 }
 
@@ -139,19 +292,21 @@ export default async function handler(req, res) {
 
     const gmail = google.gmail({ version: 'v1', auth })
     const range = fmtRange(periodDates)
-    const html = generatePDFHTML(periodDates, entries, settings, range)
-    const body = buildEmailBody(periodDates, entries, settings, range)
     const start = periodDates[0]
     const end = periodDates[6]
-    const attachmentName = `Timesheet_${start}_${end}.html`
+
+    const [pdfBuffer, htmlBody] = await Promise.all([
+      generatePDF(periodDates, entries, settings),
+      Promise.resolve(buildEmailHTML(periodDates, entries, settings, range))
+    ])
 
     const raw = makeRawEmail({
       to: process.env.KATHERINE_EMAIL,
       from: process.env.GMAIL_FROM,
       subject: `Timesheet ${range}`,
-      body,
-      attachmentName,
-      attachmentContent: html
+      htmlBody,
+      pdfBuffer,
+      attachmentName: `Timesheet_${start}_${end}.pdf`
     })
 
     const result = await gmail.users.messages.send({ userId: 'me', requestBody: { raw } })
