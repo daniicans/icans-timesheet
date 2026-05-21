@@ -71,21 +71,42 @@ export default function App() {
     setLogModal(dateStr)
   }
 
+  function syncToServer(thursdayStr, updatedEntries) {
+    fetch('/api/sync-entries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ thursdayStr, entries: updatedEntries })
+    }).catch(() => {}) // best-effort, never block the UI
+  }
+
+  function syncSettingsToServer(s) {
+    fetch('/api/sync-settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(s)
+    }).catch(() => {})
+  }
+
   function handleSaveEntry(dateStr, entry) {
     saveEntry(currentThursday, dateStr, entry)
-    setEntries(getPeriodEntries(currentThursday))
+    const updated = getPeriodEntries(currentThursday)
+    setEntries(updated)
     setLogModal(null)
+    syncToServer(currentThursday, updated)
   }
 
   function handleDeleteEntry(dateStr) {
     deleteEntry(currentThursday, dateStr)
-    setEntries(getPeriodEntries(currentThursday))
+    const updated = getPeriodEntries(currentThursday)
+    setEntries(updated)
+    syncToServer(currentThursday, updated)
   }
 
   function handleSaveSettings(newSettings) {
     saveSettings(newSettings)
     setSettings(newSettings)
     setShowSettings(false)
+    syncSettingsToServer(newSettings)
   }
 
   async function handleSendEmail() {
