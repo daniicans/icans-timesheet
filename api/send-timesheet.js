@@ -23,8 +23,8 @@ function fmtRange(dates) {
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
   const s = new Date(dates[0] + 'T00:00:00')
   const e = new Date(dates[6] + 'T00:00:00')
-  if (s.getMonth() === e.getMonth()) return `${months[s.getMonth()]} ${s.getDate()} – ${e.getDate()}`
-  return `${months[s.getMonth()]} ${s.getDate()} – ${months[e.getMonth()]} ${e.getDate()}`
+  if (s.getMonth() === e.getMonth()) return `${months[s.getMonth()]} ${s.getDate()} - ${e.getDate()}`
+  return `${months[s.getMonth()]} ${s.getDate()} - ${months[e.getMonth()]} ${e.getDate()}`
 }
 
 // ── Real PDF via pdfkit ──────────────────────────────────────────────────────
@@ -142,134 +142,153 @@ function buildEmailHTML(periodDates, entries, settings, range) {
     const dayLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
     const bg = periodDates.indexOf(date) % 2 === 0 ? '#ffffff' : '#f8fafc'
 
+    const cellBase = `background-color:${bg};padding:10px 14px;font-size:13px;border-bottom:1px solid #e2e8f0`
     if (!e?.start || !e?.end) {
-      return `<tr style="background:${bg}">
-        <td style="padding:10px 16px;font-size:13px;color:#1e2a4a">${dayLabel}</td>
-        <td style="padding:10px 16px;color:#94a3b8;text-align:center">—</td>
-        <td style="padding:10px 16px;color:#94a3b8;text-align:center">—</td>
-        <td style="padding:10px 16px;color:#94a3b8;text-align:center">—</td>
-        <td style="padding:10px 16px;color:#94a3b8;text-align:center">—</td>
+      return `<tr>
+        <td style="${cellBase};color:#1e2a4a">${dayLabel}</td>
+        <td style="${cellBase};color:#cbd5e1;text-align:center">-</td>
+        <td style="${cellBase};color:#cbd5e1;text-align:center">-</td>
+        <td style="${cellBase};color:#cbd5e1;text-align:center">-</td>
+        <td style="${cellBase};color:#cbd5e1;text-align:right">-</td>
       </tr>`
     }
     const hrs = calcHours(e.start, e.end)
     totalHrs += hrs
-    return `<tr style="background:${bg}">
-      <td style="padding:10px 16px;font-size:13px;color:#1e2a4a;font-weight:500">${dayLabel}</td>
-      <td style="padding:10px 16px;font-size:13px;color:#475569;text-align:center">${fmt12(e.start)}</td>
-      <td style="padding:10px 16px;font-size:13px;color:#475569;text-align:center">${fmt12(e.end)}</td>
-      <td style="padding:10px 16px;font-size:13px;color:#1e2a4a;font-weight:600;text-align:center">${hrs.toFixed(2)} hrs</td>
-      <td style="padding:10px 16px;font-size:13px;color:#16a34a;font-weight:700;text-align:right">$${(hrs * rate).toFixed(2)}</td>
+    return `<tr>
+      <td style="${cellBase};color:#1e2a4a;font-weight:600">${dayLabel}</td>
+      <td style="${cellBase};color:#475569;text-align:center">${fmt12(e.start)}</td>
+      <td style="${cellBase};color:#475569;text-align:center">${fmt12(e.end)}</td>
+      <td style="${cellBase};color:#1e2a4a;font-weight:700;text-align:center">${hrs.toFixed(2)} hrs</td>
+      <td style="${cellBase};color:#16a34a;font-weight:700;text-align:right">$${(hrs * rate).toFixed(2)}</td>
     </tr>`
   }).join('')
 
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 0">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)">
+  const generated = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
-        <!-- Header -->
-        <tr><td style="background:#1e2a4a;padding:28px 32px">
-          <table width="100%" cellpadding="0" cellspacing="0">
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9;padding:32px 16px">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff">
+
+  <!-- Green top bar -->
+  <tr><td style="background:#22c55e;height:6px;font-size:1px;line-height:1px">&nbsp;</td></tr>
+
+  <!-- Navy header -->
+  <tr><td style="background:#1e2a4a;padding:24px 32px">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <!-- Logo + brand -->
+        <td valign="middle">
+          <table cellpadding="0" cellspacing="0" border="0">
             <tr>
-              <td>
-                <table cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td style="background:#22c55e;width:36px;height:36px;border-radius:8px;text-align:center;vertical-align:middle">
-                      <span style="color:#1e2a4a;font-size:22px;font-weight:800;line-height:36px">i</span>
-                    </td>
-                    <td style="padding-left:10px">
-                      <div style="color:#ffffff;font-size:17px;font-weight:700;line-height:1.2">iCANS</div>
-                      <div style="color:rgba(255,255,255,.55);font-size:11px">Timesheet</div>
-                    </td>
-                  </tr>
-                </table>
+              <td width="38" height="38" align="center" valign="middle" style="background:#22c55e;border-radius:8px;width:38px;height:38px">
+                <span style="color:#1e2a4a;font-size:24px;font-weight:900;font-family:Arial Black,Arial,sans-serif;line-height:38px;display:block;text-align:center">i</span>
               </td>
-              <td align="right">
-                <div style="color:rgba(255,255,255,.55);font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Pay Period</div>
-                <div style="color:#ffffff;font-size:20px;font-weight:800">${range}</div>
-                <div style="display:inline-block;background:#22c55e;color:#1e2a4a;border-radius:999px;padding:3px 12px;font-size:11px;font-weight:700;margin-top:6px">$${Number(rate).toFixed(2)}/hr</div>
+              <td style="padding-left:12px" valign="middle">
+                <div style="color:#ffffff;font-size:18px;font-weight:700;line-height:1.1;margin:0">iCANS</div>
+                <div style="color:rgba(255,255,255,0.5);font-size:11px;margin:2px 0 0">Timesheet</div>
               </td>
             </tr>
           </table>
-        </td></tr>
+        </td>
+        <!-- Pay period -->
+        <td align="right" valign="middle">
+          <div style="color:rgba(255,255,255,0.5);font-size:9px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Pay Period</div>
+          <div style="color:#ffffff;font-size:22px;font-weight:800;line-height:1.1">${range}</div>
+          <div style="margin-top:6px">
+            <span style="background:#22c55e;color:#1e2a4a;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700">${name} &nbsp;|&nbsp; $${Number(rate).toFixed(2)}/hr</span>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
 
-        <!-- Greeting -->
-        <tr><td style="padding:28px 32px 8px">
-          <p style="margin:0;font-size:15px;color:#475569;line-height:1.6">Hi Katherine,</p>
-          <p style="margin:12px 0 0;font-size:15px;color:#475569;line-height:1.6">
-            Here is my timesheet for <strong style="color:#1e2a4a">${range}</strong>. The full timesheet is attached as a PDF.
-          </p>
-        </td></tr>
+  <!-- Greeting -->
+  <tr><td style="padding:28px 32px 0">
+    <p style="margin:0 0 8px;font-size:15px;color:#1e2a4a;font-weight:600">Hi Katherine,</p>
+    <p style="margin:0;font-size:14px;color:#475569;line-height:1.7">
+      Here is my timesheet for <strong style="color:#1e2a4a">${range}</strong>.<br/>
+      The full timesheet is attached as a PDF.
+    </p>
+  </td></tr>
 
-        <!-- Table -->
-        <tr><td style="padding:16px 32px">
-          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">
-            <thead>
-              <tr style="background:#1e2a4a">
-                <th style="padding:11px 16px;text-align:left;font-size:10px;color:#fff;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Date</th>
-                <th style="padding:11px 16px;text-align:center;font-size:10px;color:#fff;text-transform:uppercase;letter-spacing:.06em;font-weight:600">In</th>
-                <th style="padding:11px 16px;text-align:center;font-size:10px;color:#fff;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Out</th>
-                <th style="padding:11px 16px;text-align:center;font-size:10px;color:#fff;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Hours</th>
-                <th style="padding:11px 16px;text-align:right;font-size:10px;color:#fff;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Amount</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-            <tfoot>
-              <tr style="background:#1e2a4a">
-                <td colspan="3" style="padding:13px 16px;font-size:13px;color:#fff;font-weight:700">Total</td>
-                <td style="padding:13px 16px;font-size:14px;color:#fff;font-weight:800;text-align:center">${totalHrs.toFixed(2)} hrs</td>
-                <td style="padding:13px 16px;font-size:16px;color:#22c55e;font-weight:800;text-align:right">$${(totalHrs * rate).toFixed(2)}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </td></tr>
+  <!-- Table -->
+  <tr><td style="padding:20px 32px">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid #e2e8f0">
+      <!-- Header row -->
+      <tr style="background:#1e2a4a">
+        <td style="padding:10px 14px;font-size:10px;color:#ffffff;text-transform:uppercase;letter-spacing:0.07em;font-weight:700">Date</td>
+        <td style="padding:10px 14px;font-size:10px;color:#ffffff;text-transform:uppercase;letter-spacing:0.07em;font-weight:700;text-align:center">In</td>
+        <td style="padding:10px 14px;font-size:10px;color:#ffffff;text-transform:uppercase;letter-spacing:0.07em;font-weight:700;text-align:center">Out</td>
+        <td style="padding:10px 14px;font-size:10px;color:#ffffff;text-transform:uppercase;letter-spacing:0.07em;font-weight:700;text-align:center">Hours</td>
+        <td style="padding:10px 14px;font-size:10px;color:#ffffff;text-transform:uppercase;letter-spacing:0.07em;font-weight:700;text-align:right">Amount</td>
+      </tr>
+      ${rows}
+      <!-- Total row -->
+      <tr style="background:#1e2a4a">
+        <td colspan="3" style="padding:12px 14px;font-size:13px;color:#ffffff;font-weight:700">Total</td>
+        <td style="padding:12px 14px;font-size:14px;color:#ffffff;font-weight:800;text-align:center">${totalHrs.toFixed(2)} hrs</td>
+        <td style="padding:12px 14px;font-size:16px;color:#22c55e;font-weight:800;text-align:right">$${(totalHrs * rate).toFixed(2)}</td>
+      </tr>
+    </table>
+  </td></tr>
 
-        <!-- Sign-off -->
-        <tr><td style="padding:8px 32px 28px">
-          <p style="margin:0;font-size:14px;color:#475569;line-height:1.7">Best,<br/><strong style="color:#1e2a4a">${name}</strong></p>
-        </td></tr>
+  <!-- Sign-off -->
+  <tr><td style="padding:0 32px 28px">
+    <p style="margin:0;font-size:14px;color:#475569;line-height:1.8">Best,<br/><strong style="color:#1e2a4a;font-size:15px">${name}</strong></p>
+  </td></tr>
 
-        <!-- Footer -->
-        <tr><td style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0">
-          <p style="margin:0;font-size:11px;color:#94a3b8;text-align:center">
-            iCANS · <a href="https://icans.ai" style="color:#94a3b8">icans.ai</a> ·
-            Generated ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-          </p>
-        </td></tr>
+  <!-- Footer -->
+  <tr><td style="background:#f8fafc;padding:14px 32px;border-top:1px solid #e2e8f0">
+    <p style="margin:0;font-size:11px;color:#94a3b8;text-align:center">
+      iCANS &nbsp;&middot;&nbsp; icans.ai &nbsp;&middot;&nbsp; Generated ${generated}
+    </p>
+  </td></tr>
 
-      </table>
-    </td></tr>
-  </table>
+  <!-- Bottom green bar -->
+  <tr><td style="background:#22c55e;height:4px;font-size:1px;line-height:1px">&nbsp;</td></tr>
+
+</table>
+</td></tr>
+</table>
 </body>
 </html>`
 }
 
+function encodeSubject(subject) {
+  // RFC 2047: encode any non-ASCII characters so email clients don't mangle them
+  if (/^[\x00-\x7F]*$/.test(subject)) return subject
+  return `=?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`
+}
+
 function makeRawEmail({ to, from, subject, htmlBody, pdfBuffer, attachmentName }) {
   const boundary = 'boundary_icans_ts_' + Date.now()
-  const pdfB64 = pdfBuffer.toString('base64')
+  // Encode both parts as base64 so no encoding mismatch can corrupt the content
+  const htmlB64 = Buffer.from(htmlBody, 'utf8').toString('base64').match(/.{1,76}/g).join('\r\n')
+  const pdfB64 = pdfBuffer.toString('base64').match(/.{1,76}/g).join('\r\n')
 
   const raw = [
     `From: ${from}`,
     `To: ${to}`,
-    `Subject: ${subject}`,
+    `Subject: ${encodeSubject(subject)}`,
     `MIME-Version: 1.0`,
     `Content-Type: multipart/mixed; boundary="${boundary}"`,
     '',
     `--${boundary}`,
     `Content-Type: text/html; charset=UTF-8`,
-    `Content-Transfer-Encoding: quoted-printable`,
+    `Content-Transfer-Encoding: base64`,
     '',
-    htmlBody,
+    htmlB64,
     '',
     `--${boundary}`,
     `Content-Type: application/pdf; name="${attachmentName}"`,
     `Content-Disposition: attachment; filename="${attachmentName}"`,
     `Content-Transfer-Encoding: base64`,
     '',
-    pdfB64.match(/.{1,76}/g).join('\r\n'),
+    pdfB64,
     '',
     `--${boundary}--`
   ].join('\r\n')
